@@ -7,6 +7,18 @@ You do this **once per rig**. Redo it only if a camera moves or focus changes.
 
 ---
 
+## Get the code (new machine)
+
+```powershell
+git clone git@github.com:evamargin/sdannce_setup.git   # SSH
+# or: git clone https://github.com/evamargin/sdannce_setup.git
+cd sdannce_setup/calibration
+```
+
+(Need Git? `winget install --id Git.Git -e`. Need an SSH key? see the SSH steps you used to set this up.)
+
+---
+
 ## Requirements
 
 You need Python 3.9–3.11 and 4 libraries: `opencv-python`, `numpy`, `scipy`, `pyyaml`.

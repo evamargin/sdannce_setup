@@ -10,6 +10,22 @@ row-vector convention.
 
 ---
 
+## Get the code
+
+```powershell
+# SSH (if you've added an SSH key to GitHub)
+git clone git@github.com:evamargin/sdannce_setup.git
+
+# or HTTPS
+git clone https://github.com/evamargin/sdannce_setup.git
+
+cd sdannce_setup/calibration
+```
+
+Then follow `DOCUMENT.md` (step-by-step) or the install section below.
+
+---
+
 ## 0. Concepts (read once)
 
 - **Intrinsics** = a camera's lens model: focal lengths + principal point (`K`)
