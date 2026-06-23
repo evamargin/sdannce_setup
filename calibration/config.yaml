@@ -1,0 +1,60 @@
+# ---------------------------------------------------------------------------
+# Calibration config for the 4x ArduCam OV9281 sDANNCE rig.
+# Edit the values below to match YOUR chessboard and YOUR camera setup.
+# ---------------------------------------------------------------------------
+
+board:
+  # IMPORTANT: these are INNER-CORNER counts, NOT the number of squares.
+  # A board with 10 x 7 squares has 9 x 6 inner corners.
+  # Count the corners where 4 squares meet.
+  cols: 9            # inner corners along the X axis (the longer side, by convention)
+  rows: 6            # inner corners along the Y axis
+  square_mm: 25.0    # physical edge length of one square, in millimetres
+
+cameras:
+  # One entry per camera. `name` is what sDANNCE / Label3D will call it.
+  # `uvc_index` is the OpenCV VideoCapture index for live capture (ignored if
+  # you calibrate from saved videos/images). Order here = camera order everywhere.
+  - {name: "Camera1", uvc_index: 0}
+  - {name: "Camera2", uvc_index: 1}
+  - {name: "Camera3", uvc_index: 2}
+  - {name: "Camera4", uvc_index: 3}
+
+capture:
+  width: 1280        # OV9281 native width
+  height: 800        # OV9281 native height
+  # On Windows, CAP_DSHOW is the most reliable UVC backend. Other options:
+  # "msmf" (Media Foundation), "any" (let OpenCV choose).
+  backend: "dshow"
+
+intrinsics:
+  # Where to find the per-camera footage/images used for INTRINSIC calibration.
+  # Each camera reads from <intrinsics_dir>/<camera name>/  (videos or images).
+  # Accepts .avi/.mp4/.mov videos and .png/.jpg image files, mixed is fine.
+  source_dir: "data/intrinsics"
+  min_views: 12          # refuse to calibrate with fewer good views than this
+  max_views: 40          # cap how many good views we keep (speed + diminishing returns)
+  frame_stride: 5        # when reading a video, only test every Nth frame
+  sharpness_min: 60.0    # variance-of-Laplacian threshold; reject blurry frames
+  # Fix higher-order distortion to zero? OV9281 + M12 lens usually only needs
+  # k1,k2,p1,p2. Set fix_k3: true unless QC says otherwise.
+  fix_k3: true
+
+extrinsics:
+  # Synchronized multi-camera frames of ONE static board, used to place all
+  # cameras in a shared world frame. Each placement is one synchronized capture.
+  #
+  # Layout on disk: <source_dir>/<placement>/<camera name>.png  (or .jpg)
+  #   data/extrinsics/pose1/Camera1.png ... Camera4.png
+  #   data/extrinsics/pose2/Camera1.png ...
+  # Alternatively a single placement of synced videos (we grab frame `video_frame`).
+  source_dir: "data/extrinsics"
+  video_frame: 0         # if extrinsic sources are videos, which frame index to use
+
+output:
+  # Where the hires_camN_params.mat files (and QC images) are written.
+  params_dir: "output/params"
+  qc_dir: "output/qc"
+  # Also write a combined <prefix>_dannce.mat with a params cell (for Label3D)?
+  write_combined: true
+  combined_prefix: "rig"

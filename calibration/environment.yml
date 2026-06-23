@@ -1,0 +1,14 @@
+# One-shot conda install for a new machine:
+#   conda env create -f environment.yml
+#   conda activate sdannce-calib
+name: sdannce-calib
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy>=1.23
+  - scipy>=1.10
+  - pyyaml>=6.0
+  - pip
+  - pip:
+      - opencv-python>=4.8
