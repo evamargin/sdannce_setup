@@ -50,6 +50,18 @@ extrinsics:
   # Alternatively a single placement of synced videos (we grab frame `video_frame`).
   source_dir: "data/extrinsics"
   video_frame: 0         # if extrinsic sources are videos, which frame index to use
+  # --- TTL-synced Bonsai videos -------------------------------------------
+  # If you recorded one frame-synced video per camera (Arduino TTL triggers
+  # every camera on the same pulse, so frame N is the same instant in all),
+  # put them in `raw_dir` named <camera name>.<ext> (e.g. Camera1.avi) and run
+  #   python run_extract_extrinsics.py
+  # It scans the videos, finds frame indices where ALL cameras see the full
+  # board, and writes them as pose1/pose2/... placements into source_dir above.
+  synced:
+    raw_dir: "data/extrinsics_raw"   # one frame-synced video per camera
+    scan_stride: 10                  # test every Nth frame (speed vs coverage)
+    n_placements: 5                  # how many shared-board frames to keep
+    sharpness_min: 60.0              # skip motion-blurred frames
 
 output:
   # Where the hires_camN_params.mat files (and QC images) are written.

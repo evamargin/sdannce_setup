@@ -137,6 +137,57 @@ frame-sync trivial.
 
 ---
 
+## Alternative: calibrate from ONE TTL-synced video set (Bonsai)
+
+If you record with Bonsai + Arduino TTL (one pulse triggers a frame in every
+camera, so **frame N is the same instant in all cameras**), you can do both
+calibrations from a single recording session.
+
+**Record one session per rig** where you:
+1. **Wave the board around** in front of the cameras for ~30–60 s — fill each
+   camera's view, near + far, tilted, into the corners. (This is the intrinsics
+   material; the board does NOT need to be seen by all cameras at once here.)
+2. Then **hold the board still** in 4–6 spots, each visible to all cameras,
+   ~1 s each. (This is the extrinsics material.)
+
+**Lay the files out like this** (one video per camera):
+
+```
+data/
+  intrinsics/
+    Camera1/session.avi     # each camera's whole video (harvested independently)
+    Camera2/session.avi
+    Camera3/session.avi
+    Camera4/session.avi
+  extrinsics_raw/
+    Camera1.avi             # the SAME frame-synced videos, named by camera
+    Camera2.avi
+    Camera3.avi
+    Camera4.avi
+```
+
+(The `extrinsics_raw` files can be copies of the `intrinsics` videos — same
+recording.) Then run:
+
+```powershell
+python run_extract_extrinsics.py   # scans synced videos -> data/extrinsics/poseK/
+python run_intrinsics.py           # harvests board views from each camera's video
+python run_extrinsics.py
+python run_qc.py
+```
+
+`run_extract_extrinsics.py` automatically finds the frames where **all** cameras
+see the full board and turns them into placements. Tune
+`extrinsics.synced.{scan_stride, n_placements, sharpness_min}` in `config.yaml`.
+
+> **Most common failure:** high reprojection / wrong camera distances in QC almost
+> always means the **intrinsic** part of the recording didn't cover each camera's
+> field of view well enough. Wave the board more — fill the frame, vary depth and
+> tilt, reach the corners — and rerun. The static holds only fix extrinsics, not
+> intrinsics.
+
+---
+
 ## When do the cameras acquire? (summary)
 
 | Step | What the cameras record | Sync needed? |
