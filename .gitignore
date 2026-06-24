@@ -10,6 +10,10 @@ calibration/data/
 calibration/output/
 *.npz
 
+# Built Label3D transfer folders (large extracted frames; regenerate with the builder)
+calibration/label3d_*/
+label3d_*/
+
 # OS / editor
 .DS_Store
 Thumbs.db
