@@ -117,3 +117,28 @@ def sharpness(img: np.ndarray) -> float:
     """Variance of the Laplacian -- higher is sharper. Used to drop motion blur."""
     gray = img if img.ndim == 2 else cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return float(cv2.Laplacian(gray, cv2.CV_64F).var())
+
+
+def video_stats(path: Path, exact_count: bool = False) -> dict:
+    """Return {frames, fps, width, height} for a video.
+
+    `frames` comes from container metadata by default (fast). Some codecs report
+    it inaccurately; set exact_count=True to count by decoding every frame (slow
+    but exact) -- worth it for the frame-sync check.
+    """
+    cap = cv2.VideoCapture(str(path))
+    if not cap.isOpened():
+        raise RuntimeError(f"Could not open video {path}")
+    try:
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+        h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+        if exact_count:
+            n = 0
+            while cap.grab():
+                n += 1
+        else:
+            n = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        return {"frames": n, "fps": float(fps), "width": w, "height": h}
+    finally:
+        cap.release()

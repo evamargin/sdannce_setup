@@ -170,11 +170,18 @@ data/
 recording.) Then run:
 
 ```powershell
+python run_check.py                # Step 0: verify all 4 videos are frame-synced
 python run_extract_extrinsics.py   # scans synced videos -> data/extrinsics/poseK/
 python run_intrinsics.py           # harvests board views from each camera's video
 python run_extrinsics.py
 python run_qc.py
 ```
+
+`run_check.py` confirms every camera's video has the **same frame count** (a
+dropped frame in Bonsai would break frame-sync and silently ruin extrinsics),
+that resolutions match, and that the board is detectable. It exits with an error
+if something's wrong, so always run it first. Add `--exact` to count frames by
+decoding if you suspect the container metadata is off.
 
 `run_extract_extrinsics.py` automatically finds the frames where **all** cameras
 see the full board and turns them into placements. Tune
