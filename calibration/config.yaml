@@ -7,9 +7,10 @@ board:
   # IMPORTANT: these are INNER-CORNER counts, NOT the number of squares.
   # A board with 10 x 7 squares has 9 x 6 inner corners.
   # Count the corners where 4 squares meet.
-  cols: 9            # inner corners along the X axis (the longer side, by convention)
-  rows: 6            # inner corners along the Y axis
-  square_mm: 25.0    # physical edge length of one square, in millimetres
+  # Your board has 10 x 7 SQUARES  ->  9 x 6 INNER CORNERS (squares minus 1).
+  cols: 9            # inner corners along the X axis = (10 squares - 1)
+  rows: 6            # inner corners along the Y axis = (7 squares - 1)
+  square_mm: 13.8    # physical edge length of one square, in millimetres
 
 cameras:
   # One entry per camera. `name` is what sDANNCE / Label3D will call it.
@@ -35,10 +36,13 @@ intrinsics:
   min_views: 12          # refuse to calibrate with fewer good views than this
   max_views: 40          # cap how many good views we keep (speed + diminishing returns)
   frame_stride: 5        # when reading a video, only test every Nth frame
-  sharpness_min: 60.0    # variance-of-Laplacian threshold; reject blurry frames
+  sharpness_min: 10.0    # variance-of-Laplacian threshold; reject blurry frames (real footage ~25-60)
   # Fix higher-order distortion to zero? OV9281 + M12 lens usually only needs
   # k1,k2,p1,p2. Set fix_k3: true unless QC says otherwise.
   fix_k3: true
+  # OV9281 has square pixels -> force fx == fy. Keep true; stabilizes the fit
+  # when board views are limited (prevents fx/fy overfitting).
+  fix_aspect: true
 
 extrinsics:
   # Synchronized multi-camera frames of ONE static board, used to place all
@@ -61,7 +65,7 @@ extrinsics:
     raw_dir: "data/extrinsics_raw"   # one frame-synced video per camera
     scan_stride: 10                  # test every Nth frame (speed vs coverage)
     n_placements: 5                  # how many shared-board frames to keep
-    sharpness_min: 60.0              # skip motion-blurred frames
+    sharpness_min: 10.0              # skip motion-blurred frames (real footage ~25-60)
 
 output:
   # Where the hires_camN_params.mat files (and QC images) are written.

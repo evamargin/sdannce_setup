@@ -92,7 +92,7 @@ def _gather_corner_views(camera: str, source_dir: Path, spec: BoardSpec,
 def calibrate_camera(camera: str, source_dir: Path, spec: BoardSpec,
                      min_views: int = 12, max_views: int = 40,
                      frame_stride: int = 5, sharpness_min: float = 60.0,
-                     fix_k3: bool = True) -> IntrinsicResult:
+                     fix_k3: bool = True, fix_aspect: bool = True) -> IntrinsicResult:
     """Run intrinsic calibration for one camera from its source folder."""
     objpoints, imgpoints, image_size, used = _gather_corner_views(
         camera, source_dir, spec, frame_stride, sharpness_min, max_views)
@@ -108,8 +108,18 @@ def calibrate_camera(camera: str, source_dir: Path, spec: BoardSpec,
     if fix_k3:
         flags |= cv2.CALIB_FIX_K3  # OV9281 + M12 rarely needs k3; fewer params = stabler fit
 
+    K0 = None
+    if fix_aspect:
+        # OV9281 has square pixels -> fx must equal fy. Seed an initial matrix
+        # with fx=fy and fix the ratio; stops fx/fy overfitting on weak views.
+        flags |= cv2.CALIB_FIX_ASPECT_RATIO | cv2.CALIB_USE_INTRINSIC_GUESS
+        f0 = float(max(image_size))
+        K0 = np.array([[f0, 0, image_size[0] / 2.0],
+                       [0, f0, image_size[1] / 2.0],
+                       [0, 0, 1.0]])
+
     rms, K, dist, rvecs, tvecs = cv2.calibrateCamera(
-        objpoints, imgpoints, image_size, None, None, flags=flags)
+        objpoints, imgpoints, image_size, K0, None, flags=flags)
 
     per_view = _per_view_errors(objpoints, imgpoints, rvecs, tvecs, K, dist)
 

@@ -39,7 +39,7 @@ def main() -> None:
             cam, src, spec,
             min_views=ic["min_views"], max_views=ic["max_views"],
             frame_stride=ic["frame_stride"], sharpness_min=ic["sharpness_min"],
-            fix_k3=ic.get("fix_k3", True))
+            fix_k3=ic.get("fix_k3", True), fix_aspect=ic.get("fix_aspect", True))
         pv = np.array(res.per_view_error)
         print(f"  views used : {res.n_views}")
         print(f"  image size : {res.image_size}")
