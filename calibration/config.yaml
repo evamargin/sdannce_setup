@@ -43,6 +43,14 @@ intrinsics:
   # OV9281 has square pixels -> force fx == fy. Keep true; stabilizes the fit
   # when board views are limited (prevents fx/fy overfitting).
   fix_aspect: true
+  # Drop tangential distortion (p1,p2 ~ 0 on M12 modules). Keep true; it's
+  # unconstrained unless the board covers the whole frame.
+  zero_tangent: true
+  # Pin principal point to image centre. Keep true when the board stayed central
+  # during the intrinsic clip. Set FALSE only if you re-record intrinsics with
+  # the board reaching every corner of the frame (then the lens centre is well
+  # constrained and can float).
+  fix_principal_point: true
 
 extrinsics:
   # Synchronized multi-camera frames of ONE static board, used to place all

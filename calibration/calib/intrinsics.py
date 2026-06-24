@@ -92,8 +92,18 @@ def _gather_corner_views(camera: str, source_dir: Path, spec: BoardSpec,
 def calibrate_camera(camera: str, source_dir: Path, spec: BoardSpec,
                      min_views: int = 12, max_views: int = 40,
                      frame_stride: int = 5, sharpness_min: float = 60.0,
-                     fix_k3: bool = True, fix_aspect: bool = True) -> IntrinsicResult:
-    """Run intrinsic calibration for one camera from its source folder."""
+                     fix_k3: bool = True, fix_aspect: bool = True,
+                     zero_tangent: bool = True,
+                     fix_principal_point: bool = True) -> IntrinsicResult:
+    """Run intrinsic calibration for one camera from its source folder.
+
+    fix_aspect: force fx == fy (true for square-pixel OV9281).
+    zero_tangent: drop tangential distortion p1,p2 (negligible on M12 modules,
+        and unconstrained unless the board covers the whole frame).
+    fix_principal_point: pin (cx,cy) to image centre. Use when the board stayed
+        central during the intrinsic clip (can't locate the lens centre then).
+        Set false only if you captured the board across the FULL frame.
+    """
     objpoints, imgpoints, image_size, used = _gather_corner_views(
         camera, source_dir, spec, frame_stride, sharpness_min, max_views)
 
@@ -107,16 +117,21 @@ def calibrate_camera(camera: str, source_dir: Path, spec: BoardSpec,
     flags = 0
     if fix_k3:
         flags |= cv2.CALIB_FIX_K3  # OV9281 + M12 rarely needs k3; fewer params = stabler fit
+    if zero_tangent:
+        flags |= cv2.CALIB_ZERO_TANGENT_DIST
 
     K0 = None
-    if fix_aspect:
-        # OV9281 has square pixels -> fx must equal fy. Seed an initial matrix
-        # with fx=fy and fix the ratio; stops fx/fy overfitting on weak views.
-        flags |= cv2.CALIB_FIX_ASPECT_RATIO | cv2.CALIB_USE_INTRINSIC_GUESS
+    if fix_aspect or fix_principal_point:
+        # Seed an initial matrix: fx=fy and principal point at image centre.
         f0 = float(max(image_size))
         K0 = np.array([[f0, 0, image_size[0] / 2.0],
                        [0, f0, image_size[1] / 2.0],
                        [0, 0, 1.0]])
+        flags |= cv2.CALIB_USE_INTRINSIC_GUESS
+        if fix_aspect:
+            flags |= cv2.CALIB_FIX_ASPECT_RATIO
+        if fix_principal_point:
+            flags |= cv2.CALIB_FIX_PRINCIPAL_POINT
 
     rms, K, dist, rvecs, tvecs = cv2.calibrateCamera(
         objpoints, imgpoints, image_size, K0, None, flags=flags)
