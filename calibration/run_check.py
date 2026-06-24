@@ -28,6 +28,10 @@ def main() -> None:
     ap.add_argument("--config", default="config.yaml")
     ap.add_argument("--exact", action="store_true",
                     help="count frames by decoding (slow, exact) instead of metadata")
+    ap.add_argument("--tol", type=int, default=2,
+                    help="tolerated frame-count difference across cameras. Small "
+                         "diffs are usually start/stop boundary artifacts and are "
+                         "harmless for static-hold extrinsics (default 2).")
     args = ap.parse_args()
 
     cfg = load_config(args.config)
@@ -73,13 +77,22 @@ def main() -> None:
                 print(f"  -> all cameras have {counts[0]} frames. FRAME-SYNC OK.")
             else:
                 spread = max(counts) - min(counts)
-                problems.append(
-                    f"frame counts differ across cameras (min {min(counts)}, "
-                    f"max {max(counts)}, diff {spread}). A dropped frame breaks "
-                    f"frame-sync -> extrinsics will be wrong. Re-record, or trim "
-                    f"the videos to a common start/length. (Try --exact to rule "
-                    f"out a metadata quirk.)")
-                print(f"  -> MISMATCH: frame counts vary by {spread}.")
+                if spread <= args.tol:
+                    warnings.append(
+                        f"frame counts differ by {spread} (min {min(counts)}, max "
+                        f"{max(counts)}). Within tolerance ({args.tol}); almost "
+                        f"always a start/stop boundary artifact and harmless for "
+                        f"static-hold extrinsics. Proceed, but pick placements "
+                        f"during the still holds.")
+                    print(f"  -> minor diff of {spread} frame(s) (<= tol {args.tol}). OK.")
+                else:
+                    problems.append(
+                        f"frame counts differ across cameras (min {min(counts)}, "
+                        f"max {max(counts)}, diff {spread}). A dropped frame breaks "
+                        f"frame-sync -> extrinsics will be wrong. Re-record, or trim "
+                        f"the videos to a common start/length. (Try --exact to rule "
+                        f"out a metadata quirk; --tol to allow small boundary diffs.)")
+                    print(f"  -> MISMATCH: frame counts vary by {spread}.")
 
             if len(sizes) > 1:
                 problems.append(f"synced videos have mixed resolutions: {sizes}")
