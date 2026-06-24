@@ -32,10 +32,11 @@ intrinsics:
   # Where to find the per-camera footage/images used for INTRINSIC calibration.
   # Each camera reads from <intrinsics_dir>/<camera name>/  (videos or images).
   # Accepts .avi/.mp4/.mov videos and .png/.jpg image files, mixed is fine.
-  source_dir: "data/intrinsics"
+  source_dir: "data/intrinsics_large"   # 13.8mm board set (beat the 8.5mm set on coverage + fx consistency)
   min_views: 12          # refuse to calibrate with fewer good views than this
   max_views: 40          # cap how many good views we keep (speed + diminishing returns)
   frame_stride: 5        # when reading a video, only test every Nth frame
+  start_skip_seconds: 10 # ignore the first N seconds of each video (unstable start: flicker / timing jitter)
   sharpness_min: 10.0    # variance-of-Laplacian threshold; reject blurry frames (real footage ~25-60)
   # Fix higher-order distortion to zero? OV9281 + M12 lens usually only needs
   # k1,k2,p1,p2. Set fix_k3: true unless QC says otherwise.

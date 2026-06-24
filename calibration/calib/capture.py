@@ -80,8 +80,13 @@ def is_video(path: Path) -> bool:
     return Path(path).suffix.lower() in _VIDEO_EXTS
 
 
-def iter_video_frames(path: Path, stride: int = 1) -> Iterator[tuple[int, np.ndarray]]:
-    """Yield (frame_index, frame) for every `stride`-th frame of a video."""
+def iter_video_frames(path: Path, stride: int = 1,
+                      start_frame: int = 0) -> Iterator[tuple[int, np.ndarray]]:
+    """Yield (frame_index, frame) for every `stride`-th frame, from start_frame on.
+
+    Frames before start_frame are read and discarded (sequential skip is more
+    reliable than seeking across codecs). Indices are absolute (from 0).
+    """
     cap = cv2.VideoCapture(str(path))
     if not cap.isOpened():
         raise RuntimeError(f"Could not open video {path}")
@@ -91,7 +96,7 @@ def iter_video_frames(path: Path, stride: int = 1) -> Iterator[tuple[int, np.nda
             ok, frame = cap.read()
             if not ok:
                 break
-            if idx % stride == 0:
+            if idx >= start_frame and (idx - start_frame) % stride == 0:
                 yield idx, frame
             idx += 1
     finally:

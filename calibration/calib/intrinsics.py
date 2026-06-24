@@ -33,12 +33,14 @@ class IntrinsicResult:
     rms: float                    # overall RMS reprojection error (px)
     per_view_error: list[float]   # RMS per accepted view (px)
     n_views: int
+    coverage_x: float = 0.0       # board-corner x-span as fraction of frame width
+    coverage_y: float = 0.0       # board-corner y-span as fraction of frame height
     used_files: list[str] = field(default_factory=list)
 
 
 def _gather_corner_views(camera: str, source_dir: Path, spec: BoardSpec,
                          frame_stride: int, sharpness_min: float,
-                         max_views: int):
+                         max_views: int, start_skip_seconds: float = 0.0):
     """Collect (image_points, image_size) from every image/video in a folder.
 
     Spreads the per-video frame budget so we don't take 40 near-identical frames
@@ -77,7 +79,10 @@ def _gather_corner_views(camera: str, source_dir: Path, spec: BoardSpec,
         if len(imgpoints) >= max_views:
             break
         if cap_mod.is_video(src):
-            for _idx, frame in cap_mod.iter_video_frames(src, stride=frame_stride):
+            fps = cap_mod.video_stats(src)["fps"] or 30.0
+            start_frame = int(round(start_skip_seconds * fps))
+            for _idx, frame in cap_mod.iter_video_frames(
+                    src, stride=frame_stride, start_frame=start_frame):
                 if len(imgpoints) >= max_views:
                     break
                 consider(frame)
@@ -94,7 +99,8 @@ def calibrate_camera(camera: str, source_dir: Path, spec: BoardSpec,
                      frame_stride: int = 5, sharpness_min: float = 60.0,
                      fix_k3: bool = True, fix_aspect: bool = True,
                      zero_tangent: bool = True,
-                     fix_principal_point: bool = True) -> IntrinsicResult:
+                     fix_principal_point: bool = True,
+                     start_skip_seconds: float = 0.0) -> IntrinsicResult:
     """Run intrinsic calibration for one camera from its source folder.
 
     fix_aspect: force fx == fy (true for square-pixel OV9281).
@@ -103,9 +109,11 @@ def calibrate_camera(camera: str, source_dir: Path, spec: BoardSpec,
     fix_principal_point: pin (cx,cy) to image centre. Use when the board stayed
         central during the intrinsic clip (can't locate the lens centre then).
         Set false only if you captured the board across the FULL frame.
+    start_skip_seconds: ignore the first N seconds of each video (unstable start).
     """
     objpoints, imgpoints, image_size, used = _gather_corner_views(
-        camera, source_dir, spec, frame_stride, sharpness_min, max_views)
+        camera, source_dir, spec, frame_stride, sharpness_min, max_views,
+        start_skip_seconds=start_skip_seconds)
 
     n = len(imgpoints)
     if n < min_views:
@@ -138,9 +146,15 @@ def calibrate_camera(camera: str, source_dir: Path, spec: BoardSpec,
 
     per_view = _per_view_errors(objpoints, imgpoints, rvecs, tvecs, K, dist)
 
+    # Frame coverage: how much of the frame the detected corners span (0..1).
+    allc = np.concatenate([c.reshape(-1, 2) for c in imgpoints], axis=0)
+    cov_x = float((allc[:, 0].max() - allc[:, 0].min()) / image_size[0])
+    cov_y = float((allc[:, 1].max() - allc[:, 1].min()) / image_size[1])
+
     return IntrinsicResult(
         camera=camera, K=K, dist=dist.ravel(), image_size=image_size,
-        rms=float(rms), per_view_error=per_view, n_views=n, used_files=used)
+        rms=float(rms), per_view_error=per_view, n_views=n,
+        coverage_x=cov_x, coverage_y=cov_y, used_files=used)
 
 
 def _per_view_errors(objpoints, imgpoints, rvecs, tvecs, K, dist) -> list[float]:
