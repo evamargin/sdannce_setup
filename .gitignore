@@ -14,6 +14,9 @@ calibration/output/
 calibration/label3d_*/
 label3d_*/
 
+# GPU transfer staging folder (large videos; transfer-only)
+gpu/
+
 # OS / editor
 .DS_Store
 Thumbs.db
